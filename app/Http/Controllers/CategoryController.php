@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Http\Requests\StoreCategoryRequest;
-use App\Http\Requests\UpdateCategoryRequest;
+use Illuminate\Auth\Events\Validated;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class CategoryController extends Controller
 {
@@ -20,7 +21,7 @@ class CategoryController extends Controller
         $data=[
             'categories'=>$categorie,
         ];
-        return response()->json();
+        return response()->json($data);
     }
 
     /**
@@ -35,7 +36,7 @@ class CategoryController extends Controller
         $data=[
             'categories'=>$categorie,
         ];
-        return response()->json();
+        return response()->json($data);
 
     }
 
@@ -45,19 +46,37 @@ class CategoryController extends Controller
      * @param  \App\Http\Requests\StoreCategoryRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreCategoryRequest $request)
+    public function store(Request $request)
     {
         //
-        $request->validate([
-            'name'=>'required',
-            'user_id'=>'required',
+        try{
+            $request->validate([
+                'name'=>'required',
+                'user_id'=>'required',
 
-        ]);
-        Category::create([
-            'name'=>$request->name,
-            'user_id'=>$request->user_id,
+            ]);
+            Category::create([
+                'name'=>$request->name,
+                'user_id'=>$request->user_id,
 
-        ]);
+            ]);
+            return response()->json([
+                'message'=>'Berhasil Mebambahkan data',
+                'status'=>'succes',
+                'code'=>201,
+            ],201);
+
+        }
+        catch(ValidationException $ex){
+            return response()->json([
+                'message'=>$ex->getMessage(),
+                'status'=>'failed',
+                'errors'=>$ex->errors(),
+                'code'=>500
+            ],500);
+
+        }
+
     }
 
     /**
@@ -66,9 +85,11 @@ class CategoryController extends Controller
      * @param  \App\Models\Category  $category
      * @return \Illuminate\Http\Response
      */
-    public function show(Category $category)
+    public function show(Request $request, $id)
     {
         //
+        $categorie = Category::find($id);
+        return response()->json($categorie,200);
     }
 
     /**
@@ -89,19 +110,38 @@ class CategoryController extends Controller
      * @param  \App\Models\Category  $category
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateCategoryRequest $request, Category $category)
+    public function update(Request $request, $id)
     {
         //
-        $request->validate([
-            'name'=>['required'],
-            'user_id'=>['required'],
+        try{
+            $request->validate([
+                'name'=>['required'],
+                'user_id'=>['required'],
 
-        ]);
-        Category::create([
-            'name'=>$request->name,
-            'user_id'=>$request->user_id,
+            ]);
+            $validated=[
+                'name'=>$request->name,
+                'user_id'=>$request->user_id,
+            ];
+            Category::find($id)->update($validated);
+            return response()->json([
+                'message'=>'Data berhasil di update',
+                'status'=>'success',
+                'code'=>201
+            ],201);
 
-        ]);
+        }
+        catch(ValidationException $ex){
+            return response()->json([
+                'message'=>$ex->getMessage(),
+                'status'=>'failed',
+                'erroes'=>$ex->errors(),
+                'code'=>500
+            ],500);
+
+        }
+
+        return response()->json($request->all());
     }
 
     /**
@@ -114,6 +154,10 @@ class CategoryController extends Controller
     {
         //
         Category::find($id)->delete();
-        return response();
+        return response()->json([
+            'message'=>'Data berhasil di hapus',
+            'status'=>'success',
+            'code'=>201
+        ],201);
     }
 }
